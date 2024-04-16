@@ -20,15 +20,15 @@ class Scheme:
             n._S = complex(n.P, n.Q)
             for l in n._inc:
                 if l.KTR == 0:
-                    n._S += (complex(l.G, l.B))/(2000000*abs(n.V) * abs(n.V))
+                    n._S += complex(l.G, l.B)/2000000*abs(n.V) * abs(n.V)
                 elif l.ip == n.ny:
-                    n._S += (complex(l.G, l.B))/(1000000*abs(n.V) * abs(n.V))
+                    n._S += complex(l.G, l.B)/1000000*abs(n.V) * abs(n.V)
         for l in reversed(self.order):
             Z = complex(l.R, l.X)
             if l.KTR != 0:
                 Z *= l.KTR*l.KTR
             S = abs(l._iq._S)
-            U = abs(l._ip.V)
+            U = abs(l._iq.V)
             dS = Z*((S*S)/(U*U))
             l._S = l._iq._S+dS
             l._ip._S += l._S
