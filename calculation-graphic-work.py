@@ -2,6 +2,8 @@ import cmath
 import csv
 from typing import List, Optional
 
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from tabulate import tabulate
 
@@ -11,6 +13,7 @@ class Scheme:
         self.nodes = []
         self.lines = []
         self.order = []
+        self.load_losses = {}
 
     """
     Выполняет обратный шаг расчета потоков мощности в узлах электрической сети.
@@ -29,7 +32,8 @@ class Scheme:
                 Z *= l.KTR*l.KTR
             S = abs(l._iq._S)
             U = abs(l._iq.V)
-            dS = Z*((S*S)/(U*U))
+            dS = Z*((S*S)/(U*U))  # нагрузочные потери в линии
+            self.load_losses[l.iq] = dS
             l._S = l._iq._S+dS
             l._ip._S += l._S
 
@@ -258,6 +262,49 @@ class Scheme:
         else:
             print("Программа завершена")
 
+    def diagramm(self):
+        line_numbers = sorted(self.load_losses.keys())
+        real_parts = [self.load_losses[line].real for line in line_numbers]
+        imaginary_parts = [self.load_losses[line].imag for line in line_numbers]
+        width = 0.35
+
+        # Индексы для столбцов
+        ind = np.arange(len(line_numbers))
+
+        # Создание графика
+        fig, ax = plt.subplots(figsize=(12, 6))
+        rects1 = ax.bar(ind - width/2, real_parts, width, label='Действительна часть', color='r')
+        rects2 = ax.bar(ind + width/2, imaginary_parts, width, label='Мнимая часть', color='b')
+
+        # Настройка подписей осей и заголовка
+        ax.set_xlabel('Номер линии', fontsize=14)
+        ax.set_ylabel('Величина потерь', fontsize=14)
+        ax.set_title('Нагрузочные потери', fontsize=16)
+        ax.set_xticks(ind)
+        ax.set_xticklabels(line_numbers)
+
+        # Включение легенды
+        ax.legend()
+
+        # Функция для добавления значений над столбцами
+        def autolabel(rects):
+            for rect in rects:
+                height = rect.get_height()
+                ax.annotate(f'{height:.2f}',
+                            xy=(rect.get_x() + rect.get_width() / 2, height),
+                            xytext=(0, 3),  # Смещение надписи на 3 точки вверх
+                            textcoords="offset points",
+                            ha='center', va='bottom')
+
+        # Добавляем значения
+        autolabel(rects1)
+        autolabel(rects2)
+
+        # Визуализация графика
+        plt.tight_layout()
+        plt.grid(True)
+        plt.show()
+
 
 class Node:
     def __init__(self, ny: int = 0, name: str = "",
@@ -304,6 +351,8 @@ s.display()
 s.two_steps(20, 0.00001)
 # Отображаем результаты
 s.display_results()
+# Отображаем диаграмму нагрузочных потерь
+s.diagramm()
 # Сохраняем схему в файл
 s.save_scheme()
 # == Profit!
